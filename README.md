@@ -1,6 +1,6 @@
 # 电商套图生成（E-commerce Suite）
 
-> **版本**：1.0.5 ｜ **作者**：Hermes Agent ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
+> **版本**：1.0.6 ｜ **作者**：yuweiAPP ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
 
 根据一张或多张商品图片，一键生成整组电商套图——Amazon/电商主图、Listing 主图集、
 A+ 模块图、多角度细节图、场景穿搭图、卖点图等。给定商品图 URL，最终返回每张图的
@@ -65,7 +65,6 @@ uv run python skills/ecommerce-suite/scripts/generate_suite.py \
 
 > 多张参考图：重复传 `--image-url` 即可。
 > 纯净无文字图：`--language ""`。
-> 不真正出图、只走分析(更快省额度)：加 `--no-generate`。
 
 ## 参数说明
 
@@ -83,7 +82,6 @@ uv run python skills/ecommerce-suite/scripts/generate_suite.py \
 | `--brand-info` | 可选 | 自然语言描述的品牌信息（配色/字体/调性），自由文本 |
 | `--brand-logo` | 可选 | 品牌 logo 的完整图片 URL；默认仅叠加到品牌故事图（主图永不加） |
 | `--logo-on-all` | 可选 | 把 logo 叠加到所有非主图（默认仅品牌故事图） |
-| `--no-generate` | 可选 | 不真正生图，仅走分析流程(更快省额度) |
 | `--api` | 可选 | 接口地址（默认取 `ECOMMERCE_SUITE_API`） |
 
 ## 输出

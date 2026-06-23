@@ -1,20 +1,24 @@
 ---
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's name and generated image URL.
-version: 1.0.5
-author: Hermes Agent
+version: 1.0.6
+author: yuweiApp
 license: MIT
 platforms: [linux, macos, windows]
-metadata:
-  hermes:
-    tags: [ecommerce, aigc, product-images, 套图, amazon, listing, image-generation]
-    related_skills: []
+tags: [ecommerce, aigc, product-images, 套图, amazon, listing, image-generation]
+related_skills: []
 ---
 
 # 电商套图生成（E-commerce Suite）
 
-> 📦 **技能来源**：本技能源自 <https://github.com/yuweiApp/ecommerce-suite.git>。
-> 如需升级，请从该仓库获取最新版本。
+> 📦 **技能来源**：本技能源自仓库
+> <https://github.com/yuweiApp/ecommerce-suite/tree/master/skills/ecommerce-suite>。
+> 该路径下的 `ecommerce-suite` 目录即为完整技能，包含：
+> - `SKILL.md`：本说明文件（技能入口与用法）；
+> - `scripts/`：技能脚本目录（生成入口 `generate_suite.py` 等）。
+>
+> **安装 / 升级**：把仓库里整个 `ecommerce-suite` 目录（连同 `SKILL.md` 与 `scripts/`）
+> 复制到你的工作区 `skills/` 目录下，覆盖同名目录即可获取最新版本。
 
 ## When to Use
 
@@ -118,8 +122,6 @@ metadata:
 ## 如何调用
 
 脚本路径用**相对当前工作区**的 `skills/ecommerce-suite/scripts/generate_suite.py`
-（你的工作区根目录就是 hermes home，技能在其 `skills/` 下；别再在前面加 `tests/.hermes-home/`，
-那会拼成不存在的路径）。
 
 确认后调用（张数用 `--num`，按商品自动推荐画面）：
 
