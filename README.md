@@ -45,7 +45,7 @@ export ECOMMERCE_SUITE_API="http://your-host:port"   # 或用 --api 覆盖
 基础调用（自动推荐画面，生成 4 张）：
 
 ```bash
-uv run python scripts/generate_suite.py \
+uv run python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
   --num 4 --platform Amazon --country American \
   --language en_US --aspect-ratio 1:1 --image-type listing
@@ -54,7 +54,7 @@ uv run python scripts/generate_suite.py \
 带品牌信息：
 
 ```bash
-uv run python scripts/generate_suite.py \
+uv run python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
   --num 4 --platform Amazon --country American \
   --language en_US --aspect-ratio 1:1 --image-type listing \
@@ -97,6 +97,18 @@ uv run python scripts/generate_suite.py \
     { "name": "...", "aspectRatio": "1:1", "imageUrls": ["..."] }
   ]
 }
+```
+
+## 目录结构
+
+```
+ecommerce-suite/
+├── README.md                           # 项目说明
+└── skills/
+    └── ecommerce-suite/
+        ├── SKILL.md                    # 技能定义（Hermes Agent Skill 元数据与调用规范）
+        └── scripts/
+            └── generate_suite.py       # 套图生成脚本（命令行入口）
 ```
 
 ## License
