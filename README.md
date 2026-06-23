@@ -1,6 +1,6 @@
 # 电商套图生成（E-commerce Suite）
 
-> **版本**：1.0.7 ｜ **作者**：Fotor ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
+> **版本**：1.0.8 ｜ **作者**：Fotor ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
 
 根据一张或多张商品图片，一键生成整组电商套图——Amazon/电商主图、Listing 主图集、
 A+ 模块图、多角度细节图、场景穿搭图、卖点图等。给定商品图 URL，最终返回每张图的
@@ -32,11 +32,11 @@ cd ecommerce-suite
 
 ## 配置
 
-生图所需的 apikey 通过环境变量提供。脚本会自动从【与 `skills` 同级目录】的 `.env`
+生图所需的 apikey 通过环境变量提供。脚本会自动从【与 `skills` 同级目录】的 `.env.local`
 文件加载（文件不存在则跳过）：
 
 ```bash
-# .env
+# .env.local
 FOTOR_ECOMMERCE_SUITE_API=你的生图apikey
 ```
 

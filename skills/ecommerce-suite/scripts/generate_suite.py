@@ -10,17 +10,20 @@ import httpx
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-# 配置（FOTOR_ECOMMERCE_SUITE_API 等）从【与 skills 同级】的 .env 读取——即本技能 SKILL.md 目录
-# （skills/ecommerce-suite）的【上 2 级】、本脚本所在 scripts/ 的上 3 级。该 .env 由使用者自行
-# 维护：脚本【只加载、不创建】（文件不存在则直接跳过）；若其中定义了 FOTOR_ECOMMERCE_SUITE_API，
-# 则【覆盖】当前进程已有的同名环境变量（override=True）。必须在读取环境变量之前完成加载。
-_ENV_PATH = Path(__file__).resolve().parents[1].parents[1] / '.env'  # SKILL.md 目录的上 2 级
-if _ENV_PATH.is_file():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(dotenv_path=_ENV_PATH, override=True)
-    except ImportError:
-        pass  # 未安装 python-dotenv 时，退化为仅使用进程已有的环境变量
+# 配置（FOTOR_ECOMMERCE_SUITE_API 等）从【与 skills 同级】目录读取——即本技能 SKILL.md 目录
+# （skills/ecommerce-suite）的【上 2 级】、本脚本所在 scripts/ 的上 3 级。按顺序加载该目录下的
+# .env（基础配置，可选）与 .env.local（本地私有覆盖，FOTOR_ECOMMERCE_SUITE_API 写在这里）：
+# 二者都【只加载、不创建】（文件不存在就跳过）；override=True 表示文件里的值会【覆盖】当前进程
+# 已有的同名环境变量，且后加载的 .env.local 覆盖 .env。必须在读取环境变量之前完成加载。
+_CONFIG_DIR = Path(__file__).resolve().parents[1].parents[1]  # SKILL.md 目录的上 2 级
+_ENV_LOCAL_PATH = _CONFIG_DIR / '.env.local'  # FOTOR_ECOMMERCE_SUITE_API 期望写入/读取的文件
+for _env_path in (_CONFIG_DIR / '.env', _ENV_LOCAL_PATH):
+    if _env_path.is_file():
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(dotenv_path=_env_path, override=True)
+        except ImportError:
+            break  # 未安装 python-dotenv 时，退化为仅使用进程已有的环境变量
 
 def _parse_args() -> argparse.Namespace:
     # 内容参数均【不设默认值】：应由调用方（agent，按 SKILL.md 的引导与推荐）显式传入；
@@ -100,8 +103,8 @@ async def main() -> None:
     if not image_urls:
         print('❌ 至少需要一个 --image-url'); sys.exit(2)
     if not os.getenv('FOTOR_ECOMMERCE_SUITE_API'):
-        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API（FotorClient 生图 apikey）。请在与 skills 同级目录的 .env 中'
-              '设置该变量后重试，预期路径：{}'.format(_ENV_PATH)); sys.exit(2)
+        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API（FotorClient 生图 apikey）。请在与 skills 同级目录的 '
+              '.env.local 中设置该变量后重试，预期路径：{}'.format(_ENV_LOCAL_PATH)); sys.exit(2)
     if not args.api_key:
         print('❌ 缺少生图 apikey：请设置环境变量 FOTOR_ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
 
