@@ -116,8 +116,22 @@ related_skills: []
 
 ## 前置环境变量（必需）
 
-运行脚本前，运行环境里【必须】配置环境变量 `ECOMMERCE_SUITE_API`（FotorClient 生图所需的 apikey）。
-脚本会自动读取它并随请求传给后端用于生图；若未配置，脚本会报错并退出。请由使用者预先把它设置到环境变量中。
+运行脚本前，【必须】先配置好 `ECOMMERCE_SUITE_API`（FotorClient 生图所需的 apikey）。
+
+**推荐放法**：在【与本技能 `SKILL.md` 目录的上 2 级、即与 `skills/` 同级】的目录下放一个 `.env`
+文件（路径形如 `<工作区根>/.env`，和 `skills/` 平级），在其中写：
+
+```
+ECOMMERCE_SUITE_API=你的_fotor_apikey
+```
+
+脚本 `generate_suite.py` 启动时会自动加载这个 `.env`：
+- 脚本【只加载、不创建】该文件——文件不存在就跳过，不会替你新建；请由使用者自行维护它。
+- 若 `.env` 里定义了 `ECOMMERCE_SUITE_API`，会【覆盖】当前进程中已有的同名环境变量（以 `.env` 为准）。
+- 该 `.env` 属于密钥文件，请勿提交到 git。
+
+也可以不放 `.env`、直接在运行环境里 export `ECOMMERCE_SUITE_API`，效果相同。
+若两者都没有，脚本会报错并退出（并提示它期望的 `.env` 路径）。
 
 ## 如何调用
 

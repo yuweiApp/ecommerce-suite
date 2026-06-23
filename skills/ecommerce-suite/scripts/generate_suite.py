@@ -3,20 +3,29 @@ import asyncio
 import json
 import os
 import sys
+from pathlib import Path
 
 import httpx
 
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-_STEP_LABELS = {'ai_write': '① 卖点分析', 'cutout': '② 商品识别+抠图',
-                'scenes': '③ 推荐套图场景', 'prompts': '④ 生成套图提示词', 'generate': '⑤ AIGC 生图'}
-
+# 配置（ECOMMERCE_SUITE_API 等）从【与 skills 同级】的 .env 读取——即本技能 SKILL.md 目录
+# （skills/ecommerce-suite）的【上 2 级】、本脚本所在 scripts/ 的上 3 级。该 .env 由使用者自行
+# 维护：脚本【只加载、不创建】（文件不存在则直接跳过）；若其中定义了 ECOMMERCE_SUITE_API，
+# 则【覆盖】当前进程已有的同名环境变量（override=True）。必须在读取环境变量之前完成加载。
+_ENV_PATH = Path(__file__).resolve().parents[1].parents[1] / '.env'  # SKILL.md 目录的上 2 级
+if _ENV_PATH.is_file():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(dotenv_path=_ENV_PATH, override=True)
+    except ImportError:
+        pass  # 未安装 python-dotenv 时，退化为仅使用进程已有的环境变量
 
 def _parse_args() -> argparse.Namespace:
     # 内容参数均【不设默认值】：应由调用方（agent，按 SKILL.md 的引导与推荐）显式传入；
     # 未传的参数不会进入请求体，由服务端决定如何处理。
-    ap = argparse.ArgumentParser(description='电商套图 5 步流水线（异步 HTTP 客户端）')
+    ap = argparse.ArgumentParser(description='电商套图生成客户端')
     ap.add_argument('--image-url', action='append', default=[], dest='image_urls', required=True,
                     help='商品参考图 URL（可重复多次）')
     ap.add_argument('--scenes', help='自定义套图类型，逗号分隔；不传=自动推荐')
@@ -41,11 +50,10 @@ def _parse_args() -> argparse.Namespace:
 def _handle_event(ev: dict, state: dict) -> None:
     t = ev.get('type')
     if t == 'step':
-        step, status = ev.get('step'), ev.get('status')
-        if status == 'done':
-            print('✅ {} 完成 {}'.format(_STEP_LABELS.get(step, step), ev.get('msg', '')))
-        elif status == 'start':
-            print('… {} 进行中'.format(_STEP_LABELS.get(step, step)))
+        # 不暴露内部各阶段名称，只给一次性的通用进度提示（避免泄露流水线实现细节）。
+        if ev.get('status') == 'start' and not state.get('progress_shown'):
+            state['progress_shown'] = True
+            print('… 正在生成套图，请稍候')
     elif t == 'scenes':
         d = ev['data']
         print('   套图场景（{}，共 {} 张）:'.format(
@@ -92,7 +100,8 @@ async def main() -> None:
     if not image_urls:
         print('❌ 至少需要一个 --image-url'); sys.exit(2)
     if not os.getenv('ECOMMERCE_SUITE_API'):
-        print('❌ 未配置环境变量 ECOMMERCE_SUITE_API（FotorClient 生图 apikey），请先设置后重试'); sys.exit(2)
+        print('❌ 未配置 ECOMMERCE_SUITE_API（FotorClient 生图 apikey）。请在与 skills 同级目录的 .env 中'
+              '设置该变量后重试，预期路径：{}'.format(_ENV_PATH)); sys.exit(2)
     if not args.api_key:
         print('❌ 缺少生图 apikey：请设置环境变量 ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
 
