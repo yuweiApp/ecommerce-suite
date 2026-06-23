@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's name and generated image URL.
-version: 1.0.3
+version: 1.0.4
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
