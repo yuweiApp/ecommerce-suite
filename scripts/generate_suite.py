@@ -161,7 +161,7 @@ async def main() -> None:
         'productDescription': style.get('productDescription', ''),
         'items': [
             {'name': it.get('name'), 'aspectRatio': it.get('aspectRatio'),
-             'imageUrls': it.get('imageUrls'), 'prompt': it.get('prompt')}
+             'imageUrls': it.get('imageUrls')}
             for it in style.get('items', [])
         ],
     }

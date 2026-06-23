@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
-description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's prompt and generated image URL.
-version: 1.0.2
+description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's name and generated image URL.
+version: 1.0.3
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -148,4 +148,20 @@ uv run python skills/ecommerce-suite/scripts/generate_suite.py \
 | `--brand-info` | 可选 | 用户【自然语言】描述的品牌信息（配色/字体/调性等），原话整理成文本传入，别拆字段、别编造 |
 | `--brand-logo` | 可选 | 品牌 logo 的【完整 URL】（http 开头）。默认仅叠加到品牌故事图（主图永不加）。用户提供才传 |
 | `--logo-on-all` | 可选 | 仅当用户【明确要求】把 logo 放到（所有）图上时加；否则不加 |
-| `--no-generate` | 可选 | 加上则只产出文字提示词、不真正出图（更快、省额度） |
+
+## 返回结构
+
+脚本会先逐步打印中文进度，最后输出一行 `===RESULT_JSON===`，紧跟一段 JSON。**只解析这段 JSON 即可**，结构如下：
+
+```json
+{
+  "productName": "商品名称",
+  "productDescription": "商品描述",
+  "items": [
+    { "name": "主图", "aspectRatio": "1:1", "imageUrls": ["https://.../xxx.jpg"] }
+  ]
+}
+```
+
+- `items` 是本次套图的每一张：`name`（套图名称）、`aspectRatio`（比例）、`imageUrls`（生成图地址，**取 `imageUrls[0]` 就是该张套图的效果图 URL**）。
+- 若没出现 `===RESULT_JSON===`、或提示「无法连接接口」，说明生成失败/服务未就绪，如实告知用户并可稍后重试，**不要编造图片地址**。
