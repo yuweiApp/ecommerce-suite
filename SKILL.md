@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
-description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / A+ 模块图 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's prompt and generated image URL.
-version: 1.0.1
+description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's prompt and generated image URL.
+version: 1.0.2
 author: Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -15,7 +15,7 @@ metadata:
 
 ## When to Use
 
-用户给了商品图片 URL，想生成整组电商套图（Amazon/电商主图、Listing 主图集、A+ 模块图、
+用户给了商品图片 URL，想生成整组电商套图（Amazon/电商主图、Listing 主图集、
 多角度细节图、场景穿搭图、卖点图等）。
 
 **Don't use for**：单纯改图内文字（OCR/文字编辑）、非电商的通用 AI 生图。
@@ -45,9 +45,9 @@ metadata:
 
 > 免确认（满足任一即可，跳过等待、直接生成；但执行前仍要把最终设置打印告知用户）：
 > 1. 用户【用原话明确表示】不需要确认——例如「不用确认直接出」「别问了直接生成」「你看着办，直接跑」。
-> 2. 用户输入里【已经把这 5 项关键设置全部说清】：图片地址、平台/市场、图内文案语言、套图比例、
->    套图类型。这 5 项都齐了，说明用户意图明确，可直接生成（生成张数、商品关键信息等其余项缺了
->    就用推荐值/留空，不必为它们再追问）。只要 5 项里缺任意一项，就【照常走三步、必须确认】。
+> 2. 用户输入里【已经把这 4 项关键设置全部说清】：图片地址、平台/市场、图内文案语言、套图比例。
+>    这 4 项都齐了，说明用户意图明确，可直接生成（生成张数、商品关键信息等其余项缺了
+>    就用推荐值/留空，不必为它们再追问）。只要 4 项里缺任意一项，就【照常走三步、必须确认】。
 >
 > 注意：「生成亚马逊套图」「帮我做套图」这类只给了图片、没说全 5 项的普通请求，【不算】免确认，照常确认。
 
@@ -68,7 +68,6 @@ metadata:
 > - **平台 / 市场**：亚马逊 · 美国（欧美模特）
 > - **图内文案**：英文
 > - **套图比例**：1:1 方形
-> - **套图类型**：listing 套图（如选 A+ 则写「A+ 套图」）
 > - **商品关键信息**（可选，未提供则按商品图自动分析）：
 >   - 产品名称：未提供
 >   - 核心卖点：未提供
@@ -80,7 +79,7 @@ metadata:
 >
 > 商品关键信息、品牌信息你有哪些就告诉我，能让套图更贴合；没有也行。
 > 没问题就回 **「按这个生成」**；想改直接说，例如「出 5 张」「不要文字」
-> 「面向日本市场」「做成 A+ 模块图」「主打显瘦、约会穿搭」「套上我的品牌色和 logo」。
+> 「面向日本市场」「主打显瘦、约会穿搭」「套上我的品牌色和 logo」。
 
 用户确认后，再把这些设置翻成对应命令行参数去调用脚本。
 
@@ -93,7 +92,6 @@ metadata:
 | `--country` | `American` | 决定模特种族；按目标市场调整（如日本 `Japanese`） |
 | `--language` | `en_US` | 图内文案语言 i18n 代码；按目标市场调整（德国 `de_DE`、日本 `ja_JP`）；要纯净无文字图则用 `""` |
 | `--aspect-ratio` | `1:1` | Amazon 主图常用方图 |
-| `--image-type` | `listing` | 对用户称「listing 套图」；做品牌增强模块用 `aplus`，对用户称「A+ 套图」 |
 
 生成张数 → `--num`（推荐 4；第 1 张固定主图，其余按商品自动推荐画面）。
 
@@ -123,7 +121,7 @@ metadata:
 ```bash
 uv run python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
-  --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing
+  --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1
 ```
 
 用户提供了品牌信息时，按需追加品牌参数（没有的就不加）：
@@ -131,7 +129,7 @@ uv run python skills/ecommerce-suite/scripts/generate_suite.py \
 ```bash
 uv run python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
-  --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing \
+  --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 \
   --brand-info "主色深蓝配少量金色，整体高级简约，字体偏现代无衬线" \
   --brand-logo "https://.../logo.png"
 ```
@@ -146,7 +144,6 @@ uv run python skills/ecommerce-suite/scripts/generate_suite.py \
 | `--country` | 建议传 | 销售国家，**决定图中模特的种族** |
 | `--language` | 建议传 | 图内文案语言 i18n 代码（如 `en_US`）。**传 `""` 表示整组图都不加任何文字** |
 | `--aspect-ratio` | 建议传 | 图片比例：`1:1` `2:3` `3:2` `3:4` `4:3` `16:9` `9:16` |
-| `--image-type` | 建议传 | `listing`（详情/列表主图集）或 `aplus`（A+ 品牌增强模块图） |
 | `--key-info` | 可选 | 商品关键信息：产品名称/核心卖点/目标受众/使用场景，自由文本。用户提供才传，别编造 |
 | `--brand-info` | 可选 | 用户【自然语言】描述的品牌信息（配色/字体/调性等），原话整理成文本传入，别拆字段、别编造 |
 | `--brand-logo` | 可选 | 品牌 logo 的【完整 URL】（http 开头）。默认仅叠加到品牌故事图（主图永不加）。用户提供才传 |

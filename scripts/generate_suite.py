@@ -27,8 +27,6 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument('--country', help='销售国家（决定模特种族，如 American）')
     ap.add_argument('--language', help='图内文案语言 i18n 代码（如 en_US）；传 "" 表示整组不加文字')
     ap.add_argument('--aspect-ratio', dest='aspect_ratio', help='图片比例（如 1:1）')
-    ap.add_argument('--image-type', dest='image_type', choices=['listing', 'aplus'],
-                    help='listing 或 aplus')
     ap.add_argument('--key-info', dest='key_info',
                     help='商品关键信息（可选）：产品名称/核心卖点/目标受众/使用场景，自由文本')
     # 品牌信息（均可选）：自然语言描述 + 完整 logo URL
@@ -116,8 +114,6 @@ async def main() -> None:
         payload['language'] = args.language
     if args.aspect_ratio is not None:
         payload['aspect_ratio'] = args.aspect_ratio
-    if args.image_type is not None:
-        payload['image_type'] = args.image_type
     if args.key_info is not None:
         payload['sell_points'] = args.key_info
     # 品牌信息（均可选）：传了才进请求体
@@ -134,10 +130,10 @@ async def main() -> None:
         return '未指定' if v is None else (v or '无')
 
     print('🛍️ 开始生成电商套图')
-    print('   参考图 {} 张 | 模式 {} | 平台 {} | 国家 {} | 语言 {} | 比例 {} | 类型 {} | 关键信息 {} | 品牌 {} | 生图 {}'.format(
+    print('   参考图 {} 张 | 模式 {} | 平台 {} | 国家 {} | 语言 {} | 比例 {} | 关键信息 {} | 品牌 {} | 生图 {}'.format(
         len(image_urls), '自动推荐' if scenes is None else '自定义',
         _shown(args.platform), _shown(args.country), _shown(args.language),
-        _shown(args.aspect_ratio), _shown(args.image_type),
+        _shown(args.aspect_ratio),
         '有' if (args.key_info or '').strip() else '无',
         '有' if brand_on else '无',
         '否' if args.no_generate else '是'))
