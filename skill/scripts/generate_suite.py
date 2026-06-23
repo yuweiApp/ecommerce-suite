@@ -35,8 +35,9 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument('--logo-on-all', dest='logo_on_all', action='store_true',
                     help='用户明确要求时加：把 logo 叠加到所有非主图（否则仅品牌故事图）')
     ap.add_argument('--no-generate', action='store_true', help='只产出提示词，不真正生图')
-    ap.add_argument('--api_key', dest='api', default=os.getenv('ECOMMERCE_SUITE_API'),
-                    help='后端接口地址（默认取环境变量 ECOMMERCE_SUITE_API）')
+    ap.add_argument('--api', default='http://192.168.84.54:8077', help='后端套图接口地址')
+    ap.add_argument('--api_key', dest='api_key', default=os.getenv('ECOMMERCE_SUITE_API'),
+                    help='FotorClient 生图 apikey（默认取环境变量 ECOMMERCE_SUITE_API），随请求传给后端')
     return ap.parse_args()
 
 
@@ -93,8 +94,10 @@ async def main() -> None:
     image_urls = [u.strip() for u in args.image_urls if u and u.strip()]
     if not image_urls:
         print('❌ 至少需要一个 --image-url'); sys.exit(2)
-    if not args.api:
-        print('❌ 未配置后端接口地址：请设置环境变量 ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
+    if not os.getenv('ECOMMERCE_SUITE_API'):
+        print('❌ 未配置环境变量 ECOMMERCE_SUITE_API（FotorClient 生图 apikey），请先设置后重试'); sys.exit(2)
+    if not args.api_key:
+        print('❌ 缺少生图 apikey：请设置环境变量 ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
 
     base = args.api.rstrip('/')
     scenes = None
@@ -124,10 +127,8 @@ async def main() -> None:
         payload['brand_logo'] = args.brand_logo
     if args.logo_on_all:
         payload['logo_on_all'] = True
-    # FOTOR 生图密钥：从本地环境变量读取后传给服务端（不在服务端写死）
-    fotor_api_key = os.getenv('FOTOR_OPENAPI_KEY')
-    if fotor_api_key:
-        payload['fotor_api_key'] = fotor_api_key
+    # FotorClient 生图 apikey（来自环境变量 ECOMMERCE_SUITE_API / --api_key）随请求传给后端，后端不写死
+    payload['fotor_api_key'] = args.api_key
 
     brand_on = any(getattr(args, k) for k in ('brand_info', 'brand_logo'))
 

@@ -113,6 +113,11 @@ metadata:
   - 仅当用户【明确要求】把 logo 放到图上/每张都要 logo 时，才额外加 `--logo-on-all`，
     把 logo 叠到所有非主图角落。用户没明确要求就【不要加】这个开关。
 
+## 前置环境变量（必需）
+
+运行脚本前，运行环境里【必须】配置环境变量 `ECOMMERCE_SUITE_API`（FotorClient 生图所需的 apikey）。
+脚本会自动读取它并随请求传给后端用于生图；若未配置，脚本会报错并退出。请由使用者预先把它设置到环境变量中。
+
 ## 如何调用
 
 脚本路径用**相对当前工作区**的 `skills/ecommerce-suite/scripts/generate_suite.py`
