@@ -31,10 +31,7 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument('--brand-info', dest='brand_info',
                     help='用户用自然语言描述的品牌信息（配色/字体/调性/氛围等），自由文本')
     ap.add_argument('--brand-logo', dest='brand_logo',
-                    help='品牌 logo 的完整图片 URL；默认仅叠加到品牌故事图')
-    ap.add_argument('--logo-on-all', dest='logo_on_all', action='store_true',
-                    help='用户明确要求时加：把 logo 叠加到所有非主图（否则仅品牌故事图）')
-    ap.add_argument('--no-generate', action='store_true', help='只产出提示词，不真正生图')
+                    help='品牌 logo 的完整图片 URL；仅会出现在品牌故事图上（且仅无图内文案时）')
     ap.add_argument('--api', default='http://192.168.84.54:8077', help='后端套图接口地址')
     ap.add_argument('--api_key', dest='api_key', default=os.getenv('ECOMMERCE_SUITE_API'),
                     help='FotorClient 生图 apikey（默认取环境变量 ECOMMERCE_SUITE_API），随请求传给后端')
@@ -105,7 +102,7 @@ async def main() -> None:
         scenes = [s.strip() for s in args.scenes.split(',') if s.strip()] or None
 
     # 只把【显式传入】的参数放进请求体；未传的不发送，交由服务端处理（不在客户端写死默认值）。
-    payload: dict = {'image_urls': image_urls, 'do_generate': not args.no_generate}
+    payload: dict = {'image_urls': image_urls}
     if scenes is not None:
         payload['scenes'] = scenes
     if args.num is not None:
@@ -125,8 +122,6 @@ async def main() -> None:
         payload['brand_info'] = args.brand_info
     if args.brand_logo is not None:
         payload['brand_logo'] = args.brand_logo
-    if args.logo_on_all:
-        payload['logo_on_all'] = True
     # FotorClient 生图 apikey（来自环境变量 ECOMMERCE_SUITE_API / --api_key）随请求传给后端，后端不写死
     payload['fotor_api_key'] = args.api_key
 
@@ -136,13 +131,12 @@ async def main() -> None:
         return '未指定' if v is None else (v or '无')
 
     print('🛍️ 开始生成电商套图')
-    print('   参考图 {} 张 | 模式 {} | 平台 {} | 国家 {} | 语言 {} | 比例 {} | 关键信息 {} | 品牌 {} | 生图 {}'.format(
+    print('   参考图 {} 张 | 模式 {} | 平台 {} | 国家 {} | 语言 {} | 比例 {} | 关键信息 {} | 品牌 {}'.format(
         len(image_urls), '自动推荐' if scenes is None else '自定义',
         _shown(args.platform), _shown(args.country), _shown(args.language),
         _shown(args.aspect_ratio),
         '有' if (args.key_info or '').strip() else '无',
-        '有' if brand_on else '无',
-        '否' if args.no_generate else '是'))
+        '有' if brand_on else '无'))
     print('-' * 60)
 
     state: dict = {'final': None, 'error': None}
