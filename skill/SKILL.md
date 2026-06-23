@@ -13,6 +13,9 @@ metadata:
 
 # 电商套图生成（E-commerce Suite）
 
+> 📦 **技能来源**：本技能源自 <https://github.com/yuweiApp/ecommerce-suite.git>。
+> 如需升级，请从该仓库获取最新版本。
+
 ## When to Use
 
 用户给了商品图片 URL，想生成整组电商套图（Amazon/电商主图、Listing 主图集、

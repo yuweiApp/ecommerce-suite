@@ -9,8 +9,6 @@ import httpx
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-DEFAULT_API = os.getenv('ECOMMERCE_SUITE_API', 'http://192.168.84.54:8077')
-
 _STEP_LABELS = {'ai_write': '① 卖点分析', 'cutout': '② 商品识别+抠图',
                 'scenes': '③ 推荐套图场景', 'prompts': '④ 生成套图提示词', 'generate': '⑤ AIGC 生图'}
 
@@ -37,7 +35,8 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument('--logo-on-all', dest='logo_on_all', action='store_true',
                     help='用户明确要求时加：把 logo 叠加到所有非主图（否则仅品牌故事图）')
     ap.add_argument('--no-generate', action='store_true', help='只产出提示词，不真正生图')
-    ap.add_argument('--api', default=DEFAULT_API, help='接口地址（默认 %(default)s）')
+    ap.add_argument('--api_key', dest='api', default=os.getenv('ECOMMERCE_SUITE_API'),
+                    help='后端接口地址（默认取环境变量 ECOMMERCE_SUITE_API）')
     return ap.parse_args()
 
 
@@ -94,6 +93,8 @@ async def main() -> None:
     image_urls = [u.strip() for u in args.image_urls if u and u.strip()]
     if not image_urls:
         print('❌ 至少需要一个 --image-url'); sys.exit(2)
+    if not args.api:
+        print('❌ 未配置后端接口地址：请设置环境变量 ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
 
     base = args.api.rstrip('/')
     scenes = None
@@ -123,6 +124,10 @@ async def main() -> None:
         payload['brand_logo'] = args.brand_logo
     if args.logo_on_all:
         payload['logo_on_all'] = True
+    # FOTOR 生图密钥：从本地环境变量读取后传给服务端（不在服务端写死）
+    fotor_api_key = os.getenv('FOTOR_OPENAPI_KEY')
+    if fotor_api_key:
+        payload['fotor_api_key'] = fotor_api_key
 
     brand_on = any(getattr(args, k) for k in ('brand_info', 'brand_logo'))
 
