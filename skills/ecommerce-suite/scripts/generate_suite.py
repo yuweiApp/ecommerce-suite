@@ -10,9 +10,9 @@ import httpx
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-# 配置（ECOMMERCE_SUITE_API 等）从【与 skills 同级】的 .env 读取——即本技能 SKILL.md 目录
+# 配置（FOTOR_ECOMMERCE_SUITE_API 等）从【与 skills 同级】的 .env 读取——即本技能 SKILL.md 目录
 # （skills/ecommerce-suite）的【上 2 级】、本脚本所在 scripts/ 的上 3 级。该 .env 由使用者自行
-# 维护：脚本【只加载、不创建】（文件不存在则直接跳过）；若其中定义了 ECOMMERCE_SUITE_API，
+# 维护：脚本【只加载、不创建】（文件不存在则直接跳过）；若其中定义了 FOTOR_ECOMMERCE_SUITE_API，
 # 则【覆盖】当前进程已有的同名环境变量（override=True）。必须在读取环境变量之前完成加载。
 _ENV_PATH = Path(__file__).resolve().parents[1].parents[1] / '.env'  # SKILL.md 目录的上 2 级
 if _ENV_PATH.is_file():
@@ -42,8 +42,8 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument('--brand-logo', dest='brand_logo',
                     help='品牌 logo 的完整图片 URL；仅会出现在品牌故事图上（且仅无图内文案时）')
     ap.add_argument('--api', default='http://192.168.84.54:8077', help='后端套图接口地址')
-    ap.add_argument('--api_key', dest='api_key', default=os.getenv('ECOMMERCE_SUITE_API'),
-                    help='FotorClient 生图 apikey（默认取环境变量 ECOMMERCE_SUITE_API），随请求传给后端')
+    ap.add_argument('--api_key', dest='api_key', default=os.getenv('FOTOR_ECOMMERCE_SUITE_API'),
+                    help='FotorClient 生图 apikey（默认取环境变量 FOTOR_ECOMMERCE_SUITE_API），随请求传给后端')
     return ap.parse_args()
 
 
@@ -99,11 +99,11 @@ async def main() -> None:
     image_urls = [u.strip() for u in args.image_urls if u and u.strip()]
     if not image_urls:
         print('❌ 至少需要一个 --image-url'); sys.exit(2)
-    if not os.getenv('ECOMMERCE_SUITE_API'):
-        print('❌ 未配置 ECOMMERCE_SUITE_API（FotorClient 生图 apikey）。请在与 skills 同级目录的 .env 中'
+    if not os.getenv('FOTOR_ECOMMERCE_SUITE_API'):
+        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API（FotorClient 生图 apikey）。请在与 skills 同级目录的 .env 中'
               '设置该变量后重试，预期路径：{}'.format(_ENV_PATH)); sys.exit(2)
     if not args.api_key:
-        print('❌ 缺少生图 apikey：请设置环境变量 ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
+        print('❌ 缺少生图 apikey：请设置环境变量 FOTOR_ECOMMERCE_SUITE_API 或传 --api_key'); sys.exit(2)
 
     base = args.api.rstrip('/')
     scenes = None
@@ -131,7 +131,7 @@ async def main() -> None:
         payload['brand_info'] = args.brand_info
     if args.brand_logo is not None:
         payload['brand_logo'] = args.brand_logo
-    # FotorClient 生图 apikey（来自环境变量 ECOMMERCE_SUITE_API / --api_key）随请求传给后端，后端不写死
+    # FotorClient 生图 apikey（来自环境变量 FOTOR_ECOMMERCE_SUITE_API / --api_key）随请求传给后端，后端不写死
     payload['fotor_api_key'] = args.api_key
 
     brand_on = any(getattr(args, k) for k in ('brand_info', 'brand_logo'))

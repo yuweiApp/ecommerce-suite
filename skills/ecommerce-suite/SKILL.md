@@ -2,7 +2,7 @@
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs. Returns each image's name and generated image URL.
 version: 1.0.6
-author: yuweiApp
+author: Fotor
 license: MIT
 platforms: [linux, macos, windows]
 tags: [ecommerce, aigc, product-images, 套图, amazon, listing, image-generation]
@@ -116,22 +116,30 @@ related_skills: []
 
 ## 前置环境变量（必需）
 
-运行脚本前，【必须】先配置好 `ECOMMERCE_SUITE_API`（FotorClient 生图所需的 apikey）。
+运行脚本前，【必须】先配置好 `FOTOR_ECOMMERCE_SUITE_API`（FotorClient 生图所需的 apikey）。
 
 **推荐放法**：在【与本技能 `SKILL.md` 目录的上 2 级、即与 `skills/` 同级】的目录下放一个 `.env`
 文件（路径形如 `<工作区根>/.env`，和 `skills/` 平级），在其中写：
 
 ```
-ECOMMERCE_SUITE_API=你的_fotor_apikey
+FOTOR_ECOMMERCE_SUITE_API=你的_fotor_apikey
 ```
 
 脚本 `generate_suite.py` 启动时会自动加载这个 `.env`：
 - 脚本【只加载、不创建】该文件——文件不存在就跳过，不会替你新建；请由使用者自行维护它。
-- 若 `.env` 里定义了 `ECOMMERCE_SUITE_API`，会【覆盖】当前进程中已有的同名环境变量（以 `.env` 为准）。
+- 若 `.env` 里定义了 `FOTOR_ECOMMERCE_SUITE_API`，会【覆盖】当前进程中已有的同名环境变量（以 `.env` 为准）。
 - 该 `.env` 属于密钥文件，请勿提交到 git。
 
-也可以不放 `.env`、直接在运行环境里 export `ECOMMERCE_SUITE_API`，效果相同。
+也可以不放 `.env`、直接在运行环境里 export `FOTOR_ECOMMERCE_SUITE_API`，效果相同。
 若两者都没有，脚本会报错并退出（并提示它期望的 `.env` 路径）。
+
+**用户在对话里给了 apikey 时（可给可不给）**：用户可能直接把 `FOTOR_ECOMMERCE_SUITE_API`
+的值发给你（例如「我的 fotor key 是 sk_xxx」），也可能不给。
+- **给了**：就把它写入上面那个 `.env`（工作区根、与 `skills/` 同级的 `.env`）——
+  文件不存在就新建并写入一行 `FOTOR_ECOMMERCE_SUITE_API=用户给的值`；
+  文件已存在就把其中的 `FOTOR_ECOMMERCE_SUITE_API` 行更新为新值（没有该行则追加一行，不要重复），
+  其它内容保持不动。写好后再运行脚本。
+- **没给**：就【不要】改动 `.env`，直接沿用已有配置运行；若运行时报缺少 apikey，再提示用户提供。
 
 ## 如何调用
 
