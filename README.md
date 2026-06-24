@@ -1,6 +1,6 @@
 # 电商套图生成（E-commerce Suite）
 
-> **版本**：1.0.8 ｜ **作者**：Fotor ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
+> **版本**：1.0.14 ｜ **作者**：Fotor ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
 
 基于一张或多张商品参考图，通过 **Fotor Business OpenAPI** 的电商套图能力
 （`ecommercelistingset`）生成 Listing / A+ 套图。支持公网图片 URL 与
