@@ -1,6 +1,6 @@
 # 电商套图生成（E-commerce Suite）
 
-> **版本**：1.0.15 ｜ **作者**：Fotor ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
+> **版本**：1.0.8 ｜ **作者**：Fotor ｜ **License**：MIT ｜ **平台**：Linux / macOS / Windows
 
 基于一张或多张商品参考图，通过 **Fotor Business OpenAPI** 的电商套图能力
 （`ecommercelistingset`）生成 Listing / A+ 套图。支持公网图片 URL 与
@@ -16,11 +16,6 @@
 - **积分预检查**：提交前查询 `GET /v1/credits`，按 `num × 8` 估算本次消耗。
 
 ## API 概览
-
-| 环境 | Base URL |
-|---|---|
-| 沙盒 | `https://api-b-sandbox.fotor.com` |
-| 正式 | `https://api-b.fotor.com` |
 
 | 能力 | 方法 | 路径 |
 |---|---|---|
@@ -51,7 +46,7 @@ Content-Type: application/json
 - `uv`
 - 有效的 Fotor Business OpenAPI key
 
-脚本依赖 `httpx` 与 `python-dotenv`，推荐用 `uv run --with` 临时带依赖运行。
+脚本仅依赖 `httpx`，推荐用 `uv run --with httpx` 临时带依赖运行。
 
 ## 安装
 
@@ -63,23 +58,22 @@ uv --version
 
 ## 配置
 
-API key 通过环境变量 `FOTOR_ECOMMERCE_SUITE_API` 提供。脚本会自动加载与 `skills/`
-同级目录下的 `.env` 与 `.env.local`，且 `.env.local` 覆盖 `.env`：
+API key 通过环境变量 `FOTOR_ECOMMERCE_SUITE_API` 提供，必须在运行环境中预先设置
+（脚本不会自动加载 `.env` 文件）：
 
 ```bash
-# .env.local
-FOTOR_ECOMMERCE_SUITE_API=你的_fotor_business_openapi_key
+export FOTOR_ECOMMERCE_SUITE_API=你的_fotor_business_openapi_key
 ```
 
-也可以在命令行中用 `--api-key` / `--api_key` 直接传入。生产环境请把 `--api` 设置为
-`https://api-b.fotor.com`；默认使用沙盒 `https://api-b-sandbox.fotor.com`。
+Base URL 可选地通过环境变量 `FOTOR_ECOMMERCE_SUITE_API_BASE` 覆盖；未设置时使用脚本
+内置的默认地址。两者都没有对应的命令行参数。
 
 ## 使用方法
 
 基础调用（服务端自动推荐场景，生成 4 张）：
 
 ```bash
-uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/generate_suite.py \
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://example.com/product.jpeg" \
   --num 4 \
   --platform Amazon \
@@ -92,7 +86,7 @@ uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/g
 指定场景：
 
 ```bash
-uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/generate_suite.py \
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://example.com/product-1.jpg" \
   --image-url "https://example.com/product-2.jpg" \
   --scenes "主图,场景图,卖点图,模特穿搭图" \
@@ -107,7 +101,7 @@ uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/g
 带商品卖点与品牌信息：
 
 ```bash
-uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/generate_suite.py \
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://example.com/product.jpeg" \
   --num 4 \
   --platform Amazon \
@@ -132,17 +126,15 @@ uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/g
 |---|---:|---|---|
 | `--image-url` | 是 | 至少 1 个 | 商品参考图 URL 或 `data:image/...` Base64，可重复传多次 |
 | `--scenes` | 否 | 不传=自动推荐 | 自定义套图场景，逗号分隔 |
-| `--num` | 否 | 默认 4，范围 1-8 | 生成图片张数；计费与场景数量无关 |
-| `--platform` | 否 | `Amazon` | 电商平台 |
-| `--country` | 否 | `American` | 销售国家，影响模特地域表达 |
-| `--language` | 否 | `en_US` | 图内文案语言 i18n 代码；空字符串表示无文案 |
-| `--aspect-ratio` | 否 | `1:1` | 输出比例，如 `1:1`、`3:4`、`4:3`、`16:9`、`9:16` |
-| `--image-type` | 否 | `listing` | 图片类型，通常为 `listing` 或 `aplus` |
-| `--key-info` | 否 | 空 | 商品关键信息：名称、卖点、受众、使用场景等 |
-| `--brand-info` | 否 | 空 | 品牌描述：配色、字体、调性等 |
-| `--brand-logo` | 否 | 空 | 品牌 logo 图片 URL 或 Base64 |
-| `--api` | 否 | 沙盒地址 | Fotor Business OpenAPI Base URL |
-| `--api-key` / `--api_key` | 否 | 环境变量 | Fotor Business OpenAPI key |
+| `--num` | 否 | 范围 1-8（推荐 4） | 生成图片张数；计费与场景数量无关。不传由服务端决定 |
+| `--platform` | 否 | 不传由服务端决定（推荐 `Amazon`） | 电商平台 |
+| `--country` | 否 | 不传由服务端决定（推荐 `American`） | 销售国家，影响模特地域表达 |
+| `--language` | 否 | 不传由服务端决定（推荐 `en_US`） | 图内文案语言 i18n 代码；空字符串表示无文案 |
+| `--aspect-ratio` | 否 | 不传由服务端决定（推荐 `1:1`） | 输出比例，如 `1:1`、`3:4`、`4:3`、`16:9`、`9:16` |
+| `--image-type` | 否 | 不传由服务端决定（推荐 `listing`） | 图片类型，通常为 `listing` 或 `aplus` |
+| `--key-info` | 否 | 不传 | 商品关键信息：名称、卖点、受众、使用场景等 |
+| `--brand-info` | 否 | 不传 | 品牌描述：配色、字体、调性等 |
+| `--brand-logo` | 否 | 不传 | 品牌 logo 图片 URL 或 Base64 |
 | `--poll-interval` | 否 | 3 秒 | 查询任务状态的轮询间隔 |
 | `--timeout` | 否 | 600 秒 | 单任务等待超时时间 |
 
