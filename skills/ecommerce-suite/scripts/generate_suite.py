@@ -12,21 +12,7 @@ import httpx
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-# 配置（FOTOR_ECOMMERCE_SUITE_API 等）从【与 skills 同级】目录读取——即本技能 SKILL.md 目录
-# （skills/ecommerce-suite）的【上 2 级】、本脚本所在 scripts/ 的上 3 级。按顺序加载该目录下的
-# .env（基础配置，可选）与 .env.local（本地私有覆盖，FOTOR_ECOMMERCE_SUITE_API 写在这里）：
-# 二者都【只加载、不创建】（文件不存在就跳过）；override=True 表示文件里的值会【覆盖】当前进程
-# 已有的同名环境变量，且后加载的 .env.local 覆盖 .env。必须在读取环境变量之前完成加载。
-_CONFIG_DIR = Path(__file__).resolve().parents[1].parents[1]  # SKILL.md 目录的上 2 级
-_ENV_LOCAL_PATH = _CONFIG_DIR / '.env.local'  # FOTOR_ECOMMERCE_SUITE_API 期望写入/读取的文件
-for _env_path in (_CONFIG_DIR / '.env', _ENV_LOCAL_PATH):
-    if _env_path.is_file():
-        try:
-            from dotenv import load_dotenv
-
-            load_dotenv(dotenv_path=_env_path, override=True)
-        except ImportError:
-            break  # 未安装 python-dotenv 时，退化为仅使用进程已有的环境变量
+API_BASE_URL = 'https://api-b.fotor.com'
 
 
 def _read_skill_version() -> str:
@@ -65,10 +51,6 @@ def _parse_args() -> argparse.Namespace:
                     help='用户用自然语言描述的品牌信息（配色/字体/调性/氛围等），自由文本')
     ap.add_argument('--brand-logo', dest='brand_logo',
                     help='品牌 logo 的完整图片 URL 或 data:image/... Base64；用于品牌故事类场景')
-    ap.add_argument('--api', default='https://api-b-sandbox.fotor.com',
-                    help='Fotor Business OpenAPI Base URL')
-    ap.add_argument('--api-key', '--api_key', dest='api_key', default=os.getenv('FOTOR_ECOMMERCE_SUITE_API'),
-                    help='Fotor Business OpenAPI apikey（默认取环境变量 FOTOR_ECOMMERCE_SUITE_API）')
     ap.add_argument('--poll-interval', type=float, default=3.0, help='任务轮询间隔秒数')
     ap.add_argument('--timeout', type=float, default=600.0, help='单任务等待超时秒数')
     return ap.parse_args()
@@ -140,10 +122,10 @@ async def _query_credits(client: httpx.AsyncClient, base: str, api_key: str) -> 
 
 
 async def _check_credits(
-    client: httpx.AsyncClient,
-    base: str,
-    api_key: str,
-    expected_cost: int,
+        client: httpx.AsyncClient,
+        base: str,
+        api_key: str,
+        expected_cost: int,
 ) -> None:
     body = await _query_credits(client, base, api_key)
     data = body.get('data')
@@ -191,12 +173,12 @@ async def _query_task(client: httpx.AsyncClient, base: str, api_key: str, task_i
 
 
 async def _wait_for_result(
-    client: httpx.AsyncClient,
-    base: str,
-    api_key: str,
-    task_id: str,
-    poll_interval: float,
-    timeout_seconds: float,
+        client: httpx.AsyncClient,
+        base: str,
+        api_key: str,
+        task_id: str,
+        poll_interval: float,
+        timeout_seconds: float,
 ) -> dict[str, Any]:
     started = time.monotonic()
     next_progress_at = 0.0
@@ -222,7 +204,8 @@ async def _wait_for_result(
         await asyncio.sleep(max(1.0, poll_interval))
 
 
-def _build_payload(args: argparse.Namespace, image_urls: list[str], skill_version: str) -> tuple[dict[str, Any], list[str] | None]:
+def _build_payload(args: argparse.Namespace, image_urls: list[str], skill_version: str) -> tuple[
+    dict[str, Any], list[str] | None]:
     scenes = None
     if args.scenes is not None:
         scenes = [s.strip() for s in args.scenes.split(',') if s.strip()] or None
@@ -307,12 +290,12 @@ async def main() -> None:
     if args.num is not None and not 1 <= args.num <= 8:
         print('❌ --num must be between 1 and 8')
         sys.exit(2)
-    if not args.api_key:
-        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API。请在与 skills 同级目录的 .env.local 中设置该变量后重试，'
-              '预期路径：{}'.format(_ENV_LOCAL_PATH))
+    api_key = os.getenv('FOTOR_ECOMMERCE_SUITE_API')
+    if not api_key:
+        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API。请在运行环境中设置该环境变量后重试。')
         sys.exit(2)
 
-    base = args.api.rstrip('/')
+    base = API_BASE_URL
     skill_version = _read_skill_version()
     payload, scenes = _build_payload(args, image_urls, skill_version)
     brand_on = any(getattr(args, k) for k in ('brand_info', 'brand_logo'))
@@ -331,12 +314,13 @@ async def main() -> None:
         async with httpx.AsyncClient(timeout=timeout) as client:
             expected_num = int(payload.get('num') or 4)
             expected_cost = expected_num * 8
-            await _check_credits(client, base, args.api_key, expected_cost)
-            submitted = await _submit_task(client, base, args.api_key, payload)
+            await _check_credits(client, base, api_key, expected_cost)
+            submitted = await _submit_task(client, base, api_key, payload)
             task_id = submitted.get('taskId') or submitted.get('task_id')
             credits = submitted.get('creditsIncrement')
-            print('✅ 任务已提交 taskId={} | 预估消耗积分 {}'.format(task_id, _shown(str(credits) if credits is not None else None)))
-            data = await _wait_for_result(client, base, args.api_key, task_id, args.poll_interval, args.timeout)
+            print('✅ 任务已提交 taskId={} | 预估消耗积分 {}'.format(task_id, _shown(
+                str(credits) if credits is not None else None)))
+            data = await _wait_for_result(client, base, api_key, task_id, args.poll_interval, args.timeout)
     except httpx.ConnectError:
         print('❌ 无法连接接口 {}：请确认网络和 API 地址后重试。'.format(base))
         sys.exit(3)

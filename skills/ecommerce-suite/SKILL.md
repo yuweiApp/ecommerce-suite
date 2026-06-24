@@ -1,14 +1,14 @@
 ---
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs or data:image Base64 inputs. Returns per-scene results with each image name, success flag, generated URL, or error.
-version: 1.0.12
+version: 1.0.13
 author: Fotor
 license: MIT
-platforms: [linux, macos, windows]
-tags: [ecommerce, aigc, product-images, 套图, amazon, listing, image-generation]
-related_skills: []
+platforms: [ linux, macos, windows ]
+tags: [ ecommerce, aigc, product-images, 套图, amazon, listing, image-generation ]
+related_skills: [ ]
 prerequisites:
-  env_vars: [FOTOR_ECOMMERCE_SUITE_API]
+  env_vars: [ FOTOR_ECOMMERCE_SUITE_API ]
 required_environment_variables:
   - name: FOTOR_ECOMMERCE_SUITE_API
     prompt: Fotor e-commerce suite API key
@@ -19,19 +19,10 @@ metadata:
     emoji: "🛍️"
     primaryEnv: FOTOR_ECOMMERCE_SUITE_API
     requires:
-      anyBins: ["python3", "python"]
+      anyBins: [ "python3", "python" ]
 ---
 
 # 电商套图生成（E-commerce Suite）
-
-> 📦 **技能来源**：本技能源自仓库
-> <https://github.com/yuweiApp/ecommerce-suite/tree/master/skills/ecommerce-suite>。
-> 该路径下的 `ecommerce-suite` 目录即为完整技能，包含：
-> - `SKILL.md`：本说明文件（技能入口与用法）；
-> - `scripts/`：技能脚本目录（生成入口 `generate_suite.py` 等）。
->
-> **安装 / 升级**：把仓库里整个 `ecommerce-suite` 目录（连同 `SKILL.md` 与 `scripts/`）
-> 复制到你的工作区 `skills/` 目录下，覆盖同名目录即可获取最新版本。
 
 ## When to Use
 
@@ -40,20 +31,14 @@ metadata:
 
 **Don't use for**：单纯改图内文字（OCR/文字编辑）、非电商的通用 AI 生图。
 
-> ⛔ **本技能自带的脚本就是唯一生成入口，把它当黑盒直接用即可。【不要】用 `search_files`、
-> `read_file`、`grep` 等去仓库/项目里搜索、探查所谓「其它生成入口」「项目流程」或脚本实现——
-> 既无必要也会拖慢响应。** 你只需按下面流程跟用户确认参数，然后用「如何调用」里的命令运行脚本。
-
 ## 调用流程（重要）
 
 业务内容参数需要你按下方推荐值显式传入；用户未提供的可选信息不要编造。
-脚本自身只对 API 地址、轮询间隔、超时时间这类运行参数提供默认值。
 
 底层接口使用 **Fotor Business OpenAPI 电商套图异步任务**：
 - 查询积分：`GET /v1/credits`
 - 提交任务：`POST /v1/aiart/ecommercelistingset`
 - 查询任务：`GET /v1/aiart/tasks/{taskId}`
-- 默认 API Base URL：沙盒 `https://api-b-sandbox.fotor.com`；生产环境用 `--api https://api-b.fotor.com`
 - 默认 provider 为 `skill`，提交任务不要在 URL 中额外拼 provider；兼容路径由服务端处理。
 - 任务状态：`0` 进行中，`1` 成功，`2` 失败；脚本会自动轮询到成功、失败或超时。
 
@@ -146,42 +131,16 @@ metadata:
 
 ## 前置环境变量（必需）
 
-运行脚本前，【必须】先配置好 `FOTOR_ECOMMERCE_SUITE_API`（Fotor Business OpenAPI apikey）。
-
-**推荐放法**：在【与本技能 `SKILL.md` 目录的上 2 级、即与 `skills/` 同级】的目录下放一个
-`.env.local` 文件（路径形如 `<工作区根>/.env.local`，和 `skills/` 平级），在其中写：
-
-```
-FOTOR_ECOMMERCE_SUITE_API=你的_fotor_apikey
-```
-
-脚本 `generate_suite.py` 启动时会自动加载该目录下的 `.env` 与 `.env.local`（后者覆盖前者）：
-- 脚本【只加载、不创建】这些文件——文件不存在就跳过，不会替你新建；请由使用者自行维护。
-- 文件里定义的 `FOTOR_ECOMMERCE_SUITE_API` 会【覆盖】当前进程中已有的同名环境变量（以文件为准）。
-- `.env.local` 属于本地密钥文件，请勿提交到 git。
-
-也可以不放文件、直接在运行环境里 export `FOTOR_ECOMMERCE_SUITE_API`，效果相同。
-若都没有，脚本会报错并退出（并提示它期望的 `.env.local` 路径）。
-
-脚本会把该 key 放在请求头 `Authorization: Bearer <key>` 中；不会把 `fotor_api_key`、
-`webhook_url` 放进请求体（这些字段不对外暴露，由平台侧配置）。
-
-**用户在对话里给了 apikey 时（可给可不给）**：用户可能直接把 `FOTOR_ECOMMERCE_SUITE_API`
-的值发给你（例如「我的 fotor key 是 sk_xxx」），也可能不给。
-- **给了**：就把它写入 `.env.local`（工作区根、与 `skills/` 同级的 `.env.local`）——
-  文件不存在就新建并写入一行 `FOTOR_ECOMMERCE_SUITE_API=用户给的值`；
-  文件已存在就把其中的 `FOTOR_ECOMMERCE_SUITE_API` 行更新为新值（没有该行则追加一行，不要重复），
-  其它内容保持不动。【只写 `.env.local`，不要写 `.env`】。写好后再运行脚本。
-- **没给**：就【不要】改动 `.env.local`，直接沿用已有配置运行；若运行时报缺少 apikey，再提示用户提供。
+运行脚本前，【必须】确保运行环境中已配置 `FOTOR_ECOMMERCE_SUITE_API`
+（Fotor Business OpenAPI apikey）。脚本会把该 key 放在请求头
+`Authorization: Bearer <key>` 中。
 
 ## 如何调用
 
 脚本路径用当前技能安装位置下的 `skills/ecommerce-suite/scripts/generate_suite.py`。
-在本仓库 `hermes-config` 源目录中调试时，路径是
-`hermes-config/skills/ecommerce-suite/scripts/generate_suite.py`。
 
-脚本依赖 `httpx` 与 `python-dotenv`，统一用 `uv run --with httpx --with python-dotenv python`
-运行（这样无论当前环境是否已装这两个依赖，都能临时备齐、稳定运行）。
+脚本依赖 `httpx`，统一用 `uv run --with httpx python`
+运行（这样无论当前环境是否已装该依赖，都能临时备齐、稳定运行）。
 
 脚本会在提交任务前调用 `GET /v1/credits` 查询积分，并按 `num × 8` 估算本次消耗：
 - 若识别到余额且余额不足，脚本会直接停止，不提交生成任务。
@@ -191,7 +150,7 @@ FOTOR_ECOMMERCE_SUITE_API=你的_fotor_apikey
 确认后调用（张数用 `--num`，不传 `--scenes` 表示按商品自动推荐画面）：
 
 ```bash
-uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/generate_suite.py \
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
   --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing
 ```
@@ -199,7 +158,7 @@ uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/g
 用户明确指定场景时，追加 `--scenes`（没有指定就不加）：
 
 ```bash
-uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/generate_suite.py \
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
   --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing \
   --scenes "主图,场景图,卖点图,模特穿搭图"
@@ -208,7 +167,7 @@ uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/g
 用户提供了品牌信息时，按需追加品牌参数（没有的就不加）：
 
 ```bash
-uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/generate_suite.py \
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
   --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing \
   --brand-info "主色深蓝配少量金色，整体高级简约，字体偏现代无衬线" \
@@ -230,7 +189,6 @@ uv run --with httpx --with python-dotenv python skills/ecommerce-suite/scripts/g
 | `--key-info` | 可选 | 商品关键信息：产品名称/核心卖点/目标受众/使用场景，自由文本。用户提供才传，别编造 |
 | `--brand-info` | 可选 | 用户【自然语言】描述的品牌信息（配色/字体/调性等），原话整理成文本传入，别拆字段、别编造 |
 | `--brand-logo` | 可选 | 品牌 logo 的【完整 URL】或 `data:image/...` Base64。用户提供才传，别编造地址 |
-| `--api` | 可选 | API Base URL；默认沙盒 `https://api-b-sandbox.fotor.com`，生产用 `https://api-b.fotor.com` |
 | `--poll-interval` | 可选 | 轮询间隔秒数，默认 3 秒 |
 | `--timeout` | 可选 | 单任务等待超时秒数，默认 600 秒 |
 
