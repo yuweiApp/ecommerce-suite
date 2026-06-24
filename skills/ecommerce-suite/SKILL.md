@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs or data:image Base64 inputs. Returns per-scene results with each image name, success flag, generated URL, or error.
-version: 1.0.13
+version: 1.0.14
 author: Fotor
 license: MIT
 platforms: [ linux, macos, windows ]

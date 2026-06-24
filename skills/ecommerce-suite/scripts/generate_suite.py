@@ -13,6 +13,7 @@ import httpx
 sys.stdout.reconfigure(encoding='utf-8')
 
 API_BASE_URL = 'https://api-b.fotor.com'
+API_USER_AGENT = 'curl/8.0'
 
 
 def _read_skill_version() -> str:
@@ -60,7 +61,17 @@ def _api_headers(api_key: str) -> dict[str, str]:
     return {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': API_USER_AGENT,
     }
+
+
+def _http_error_message(action: str, resp: httpx.Response) -> str:
+    text = resp.text[:500]
+    message = f'{action}失败 HTTP {resp.status_code}: {text}'
+    if resp.status_code == 403 and '1010' in text:
+        message += '。请求可能被 Cloudflare 1010 规则拦截，请确认 User-Agent / 当前网络 / IP 已被允许访问。'
+    return message
 
 
 def _parse_json_response(resp: httpx.Response) -> dict[str, Any]:
@@ -114,7 +125,7 @@ async def _query_credits(client: httpx.AsyncClient, base: str, api_key: str) -> 
     url = f'{base}/v1/credits'
     resp = await client.get(url, headers=_api_headers(api_key))
     if resp.status_code != 200:
-        raise RuntimeError(f'查询积分失败 HTTP {resp.status_code}: {resp.text[:500]}')
+        raise RuntimeError(_http_error_message('查询积分', resp))
 
     body = _parse_json_response(resp)
     _ensure_success_body(body)
@@ -145,7 +156,7 @@ async def _submit_task(client: httpx.AsyncClient, base: str, api_key: str, paylo
     url = f'{base}/v1/aiart/ecommercelistingset'
     resp = await client.post(url, headers=_api_headers(api_key), json=payload)
     if resp.status_code != 200:
-        raise RuntimeError(f'提交任务失败 HTTP {resp.status_code}: {resp.text[:500]}')
+        raise RuntimeError(_http_error_message('提交任务', resp))
 
     body = _parse_json_response(resp)
     _ensure_success_body(body)
@@ -162,7 +173,7 @@ async def _query_task(client: httpx.AsyncClient, base: str, api_key: str, task_i
     url = f'{base}/v1/aiart/tasks/{task_id}'
     resp = await client.get(url, headers=_api_headers(api_key))
     if resp.status_code != 200:
-        raise RuntimeError(f'查询任务失败 HTTP {resp.status_code}: {resp.text[:500]}')
+        raise RuntimeError(_http_error_message('查询任务', resp))
 
     body = _parse_json_response(resp)
     _ensure_success_body(body)
