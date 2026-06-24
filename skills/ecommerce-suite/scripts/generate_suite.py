@@ -14,6 +14,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 API_BASE_URL = 'https://api-b.fotor.com'
 API_USER_AGENT = 'curl/8.0'
+HTTP_RETRIES = 3
+HTTP_RETRY_DELAY_SECONDS = 2.0
 
 
 def _read_skill_version() -> str:
@@ -104,6 +106,7 @@ def _extract_credit_balance(data: Any) -> float | None:
         'balance',
         'availableCredits',
         'available_credits',
+        'remaining',
         'remainingCredits',
         'remaining_credits',
         'totalCredits',
@@ -121,9 +124,31 @@ def _extract_credit_balance(data: Any) -> float | None:
     return None
 
 
+async def _request_with_retries(
+        client: httpx.AsyncClient,
+        method: str,
+        url: str,
+        action: str,
+        **kwargs: Any,
+) -> httpx.Response:
+    last_error: httpx.TransportError | None = None
+    for attempt in range(1, HTTP_RETRIES + 1):
+        try:
+            return await client.request(method, url, **kwargs)
+        except httpx.TransportError as e:
+            last_error = e
+            if attempt >= HTTP_RETRIES:
+                break
+            print('⚠️ {}连接失败，{} 秒后重试（{}/{}）：{}'.format(
+                action, int(HTTP_RETRY_DELAY_SECONDS), attempt, HTTP_RETRIES, e))
+            await asyncio.sleep(HTTP_RETRY_DELAY_SECONDS)
+    assert last_error is not None
+    raise last_error
+
+
 async def _query_credits(client: httpx.AsyncClient, base: str, api_key: str) -> dict[str, Any]:
     url = f'{base}/v1/credits'
-    resp = await client.get(url, headers=_api_headers(api_key))
+    resp = await _request_with_retries(client, 'GET', url, '查询积分', headers=_api_headers(api_key))
     if resp.status_code != 200:
         raise RuntimeError(_http_error_message('查询积分', resp))
 
@@ -154,7 +179,7 @@ async def _check_credits(
 
 async def _submit_task(client: httpx.AsyncClient, base: str, api_key: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f'{base}/v1/aiart/ecommercelistingset'
-    resp = await client.post(url, headers=_api_headers(api_key), json=payload)
+    resp = await _request_with_retries(client, 'POST', url, '提交任务', headers=_api_headers(api_key), json=payload)
     if resp.status_code != 200:
         raise RuntimeError(_http_error_message('提交任务', resp))
 
@@ -171,7 +196,7 @@ async def _submit_task(client: httpx.AsyncClient, base: str, api_key: str, paylo
 
 async def _query_task(client: httpx.AsyncClient, base: str, api_key: str, task_id: str) -> dict[str, Any]:
     url = f'{base}/v1/aiart/tasks/{task_id}'
-    resp = await client.get(url, headers=_api_headers(api_key))
+    resp = await _request_with_retries(client, 'GET', url, '查询任务', headers=_api_headers(api_key))
     if resp.status_code != 200:
         raise RuntimeError(_http_error_message('查询任务', resp))
 
