@@ -12,7 +12,7 @@ import httpx
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-API_BASE_URL = os.getenv('FOTOR_ECOMMERCE_SUITE_API_BASE', 'https://api-b-sandbox.fotor.com')
+API_BASE_URL = os.getenv('FOTOR_ECOMMERCE_SUITE_API_BASE', 'https://api-b.fotor.com')
 API_USER_AGENT = 'curl/8.0'
 HTTP_RETRIES = 3
 HTTP_RETRY_DELAY_SECONDS = 2.0
@@ -276,11 +276,41 @@ def _shown(v: str | None) -> str:
     return '未指定' if v is None else (v or '无')
 
 
+def _normalize_result_item(raw: Any) -> dict[str, Any] | None:
+    """把单个场景结果归一化成 {name, success, url, error} 字典。
+
+    兼容三种实际可能的形态：
+      1. 已是对象：{'name':..., 'success':..., 'url':...}（理想/旧文档格式）。
+      2. DynamoDB/序列化形式：[{'Key':'name','Value':...}, {'Key':'success','Value':...}, ...]
+         —— 线上 GET /v1/aiart/tasks/{id} 实际返回的就是这种 KV 对列表。
+    其余形态（如纯 URL 字符串）返回 None，交给 _fallback_result_urls 处理。
+    """
+    item: dict[str, Any] = {}
+    if isinstance(raw, dict):
+        item = dict(raw)
+    elif isinstance(raw, list):
+        for kv in raw:
+            if isinstance(kv, dict) and 'Key' in kv:
+                item[str(kv['Key'])] = kv.get('Value')
+    if not item:
+        return None
+    # success 可能是 bool / "true" 字符串，统一成 bool 便于后续判断。
+    success = item.get('success')
+    if isinstance(success, str):
+        item['success'] = success.strip().lower() in ('true', '1', 'yes')
+    return item
+
+
 def _iter_result_items(data: dict[str, Any]) -> list[dict[str, Any]]:
     result = data.get('result')
-    if isinstance(result, list):
-        return [item for item in result if isinstance(item, dict)]
-    return []
+    if not isinstance(result, list):
+        return []
+    items = []
+    for raw in result:
+        item = _normalize_result_item(raw)
+        if item is not None:
+            items.append(item)
+    return items
 
 
 def _successful_result_items(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -373,6 +403,13 @@ async def main() -> None:
     if not result_url and not success_items and not legacy_urls:
         print('❌ 任务完成但未返回成图 URL')
         sys.exit(1)
+
+    # 把 result 归一化成干净的 {name,success,url,error} 对象数组再输出，
+    # 让上层（agent / SKILL.md 的「遍历 data.result」约定）拿到的就是文档所述格式，
+    # 而非线上的 [{Key,Value}...] KV 列表。
+    normalized_items = _iter_result_items(data)
+    if normalized_items:
+        data = {**data, 'result': normalized_items}
 
     print('-' * 60)
     print('🎉 完成！')

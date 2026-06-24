@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs or data:image Base64 inputs. Returns per-scene results with each image name, success flag, generated URL, or error.
-version: 1.0.15
+version: 1.0.8
 author: Fotor
 license: MIT
 platforms: [ linux, macos, windows ]
@@ -194,8 +194,7 @@ uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
 
 ## 返回结构
 
-脚本会先逐步打印中文进度，任务成功后最后输出一段符合
-`GET /v1/aiart/tasks/{taskId}` 查询接口标准格式的 JSON：
+脚本会先逐步打印中文进度，任务成功后最后输出一段 JSON，`data.result` 为分场景对象数组：
 
 ```json
 {
