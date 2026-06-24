@@ -12,7 +12,7 @@ import httpx
 # Windows 控制台默认 GBK，中文/德语等非 GBK 字符直接 print 会 UnicodeEncodeError
 sys.stdout.reconfigure(encoding='utf-8')
 
-API_BASE_URL = 'https://api-b.fotor.com'
+API_BASE_URL = os.getenv('FOTOR_ECOMMERCE_SUITE_API_BASE', 'https://api-b-sandbox.fotor.com')
 API_USER_AGENT = 'curl/8.0'
 HTTP_RETRIES = 3
 HTTP_RETRY_DELAY_SECONDS = 2.0
