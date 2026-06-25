@@ -131,6 +131,9 @@ async def _request_with_retries(
         action: str,
         **kwargs: Any,
 ) -> httpx.Response:
+    """仅用于【积分查询】的连接级重试（TransportError）。提交任务 / 查询任务不走这里——
+    提交重试会重复入队计费，查询本身就在轮询循环里反复调用，都不需要重试。
+    """
     last_error: httpx.TransportError | None = None
     for attempt in range(1, HTTP_RETRIES + 1):
         try:
@@ -179,7 +182,8 @@ async def _check_credits(
 
 async def _submit_task(client: httpx.AsyncClient, base: str, api_key: str, payload: dict[str, Any]) -> dict[str, Any]:
     url = f'{base}/v1/aiart/ecommercelistingset'
-    resp = await _request_with_retries(client, 'POST', url, '提交任务', headers=_api_headers(api_key), json=payload)
+    # 提交任务【不重试】：重复提交会重复入队/计费，宁可直接失败让上层决定。
+    resp = await client.post(url, headers=_api_headers(api_key), json=payload)
     if resp.status_code != 200:
         raise RuntimeError(_http_error_message('提交任务', resp))
 
@@ -196,7 +200,8 @@ async def _submit_task(client: httpx.AsyncClient, base: str, api_key: str, paylo
 
 async def _query_task(client: httpx.AsyncClient, base: str, api_key: str, task_id: str) -> dict[str, Any]:
     url = f'{base}/v1/aiart/tasks/{task_id}'
-    resp = await _request_with_retries(client, 'GET', url, '查询任务', headers=_api_headers(api_key))
+    # 查询任务【不重试】：本身在轮询循环里被反复调用，单次失败直接抛出即可。
+    resp = await client.get(url, headers=_api_headers(api_key))
     if resp.status_code != 200:
         raise RuntimeError(_http_error_message('查询任务', resp))
 
