@@ -1,6 +1,8 @@
 import argparse
 import asyncio
+import base64
 import json
+import mimetypes
 import os
 import sys
 import time
@@ -352,12 +354,36 @@ def _print_result_summary(data: dict[str, Any]) -> None:
             print('   ⚠️ {}: {}'.format(name, item.get('error') or '生成失败'))
 
 
+def _resolve_image_input(value: str) -> str:
+    """把单个 --image-url 取值规整成接口可接受的形式：
+      - http(s):// 或 data: 开头 → 原样返回；
+      - 存在的本地文件路径 → 读出并转成 data:image/<mime>;base64,<...>（省去手动上传 S3 这一步）；
+      - 其余（既非 URL/Base64、本地又找不到该文件）→ 报错退出，避免把无效值发给接口。
+    """
+    v = value.strip()
+    if v.startswith(('http://', 'https://', 'data:')):
+        return v
+    p = Path(v).expanduser()
+    if p.is_file():
+        mime = mimetypes.guess_type(p.name)[0] or ''
+        if not mime.startswith('image/'):
+            mime = 'image/jpeg'  # 识别不出扩展名时兜底
+        b64 = base64.b64encode(p.read_bytes()).decode('ascii')
+        print('🖼️ 本地图片转 base64：{}（{:.0f} KB, {}）'.format(
+            p.name, p.stat().st_size / 1024, mime))
+        return 'data:{};base64,{}'.format(mime, b64)
+    print('❌ --image-url 既不是 http(s)/data: 链接，也找不到本地文件：{}'.format(value))
+    sys.exit(2)
+
+
 async def main() -> None:
     args = _parse_args()
-    image_urls = [u.strip() for u in args.image_urls if u and u.strip()]
-    if not image_urls:
+    raw_inputs = [u.strip() for u in args.image_urls if u and u.strip()]
+    if not raw_inputs:
         print('❌ 至少需要一个 --image-url')
         sys.exit(2)
+    # 本地文件路径会在此就地转成 data:image base64；URL / data: 原样保留。
+    image_urls = [_resolve_image_input(u) for u in raw_inputs]
     if args.num is not None and not 1 <= args.num <= 8:
         print('❌ --num must be between 1 and 8')
         sys.exit(2)

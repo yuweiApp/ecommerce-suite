@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
-description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photo URLs or data:image Base64 inputs. Returns per-scene results with each image name, success flag, generated URL, or error.
-version: 1.0.14
+description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photos given as URLs or local file paths. Returns per-scene results with each image name, success flag, generated URL, or error.
+version: 1.0.8
 author: Fotor
 license: MIT
 platforms: [ linux, macos, windows ]
@@ -26,8 +26,8 @@ metadata:
 
 ## When to Use
 
-用户给了商品图片 URL 或 `data:image/...` Base64，想生成整组电商套图（Amazon/电商主图、Listing 主图集、
-多角度细节图、场景穿搭图、卖点图等）。
+用户给了商品图片（公网 URL 或**本地文件路径**），想生成整组电商套图
+（Amazon/电商主图、Listing 主图集、多角度细节图、场景穿搭图、卖点图等）。
 
 **Don't use for**：单纯改图内文字（OCR/文字编辑）、非电商的通用 AI 生图。
 
@@ -49,7 +49,8 @@ metadata:
 
 按下面三步走：
 
-1. **抽取**：从用户需求里抽取已明确的参数。商品图 URL 是硬性前提——没有就先向用户要。
+1. **抽取**：从用户需求里抽取已明确的参数。商品图是硬性前提——可以是公网 URL 或【本地文件路径】
+   （本地文件脚本会自动处理，**你直接把路径原样传给 `--image-url` 即可**）；没有就先向用户要。
    同时留意用户有没有顺带说出【商品关键信息】（产品名称/核心卖点/目标受众/使用场景），有就记下。
 2. **补全 + 推荐**：对用户【没说】的参数，用下表推荐值补全。**商品关键信息是可选项、不推荐默认值**：
    用户提供了就用，没提供就【留空、不要编造】（系统会纯按商品图分析）。
@@ -126,7 +127,7 @@ metadata:
 - `--brand-info`：用户【用自然语言】描述的品牌信息，原话整理成一段文本传入即可（不用拆成
   结构化的色值/字段）。比如用户说「主色是深蓝配少量金色、整体高级简约、字体偏现代无衬线」，
   就把这段描述原样传进去。非主图会据此统一营造该品牌的视觉调性；主图保持干净不套。
-- `--brand-logo`：品牌 logo 的【完整图片 URL】或 `data:image/...` Base64。用户给的链接/内容原样传入，
+- `--brand-logo`：品牌 logo 的【完整图片 URL】。用户给的链接原样传入，
   【不要】自己臆造地址或转写图片内容。用户提供了就传，没提供就不传。
 
 ## 前置环境变量（必需）
@@ -178,7 +179,7 @@ uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
 
 | 参数 | 必填 | 含义 |
 |---|---|---|
-| `--image-url` | ✅ | 商品参考图 URL 或 `data:image/...` Base64；有多张就重复传多次 |
+| `--image-url` | ✅ | 商品参考图：公网 URL 或**本地文件路径**（本地文件脚本会自动处理）；有多张就重复传多次 |
 | `--scenes` | 可选 | 自定义套图场景，逗号分隔；不传或空数组时使用服务端自动推荐 |
 | `--num` | 建议传 | 生成几张（1–8，推荐 4）。图片张数与场景数量无关 |
 | `--platform` | 建议传 | 目标平台（如 `Amazon`） |
@@ -188,7 +189,7 @@ uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
 | `--image-type` | 建议传 | 图片类型，通常为 `listing` 或 `aplus` |
 | `--key-info` | 可选 | 商品关键信息：产品名称/核心卖点/目标受众/使用场景，自由文本。用户提供才传，别编造 |
 | `--brand-info` | 可选 | 用户【自然语言】描述的品牌信息（配色/字体/调性等），原话整理成文本传入，别拆字段、别编造 |
-| `--brand-logo` | 可选 | 品牌 logo 的【完整 URL】或 `data:image/...` Base64。用户提供才传，别编造地址 |
+| `--brand-logo` | 可选 | 品牌 logo 的【完整 URL】。用户提供才传，别编造地址 |
 | `--poll-interval` | 可选 | 轮询间隔秒数，默认 3 秒 |
 | `--timeout` | 可选 | 单任务等待超时秒数，默认 600 秒 |
 
