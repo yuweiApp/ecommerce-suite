@@ -41,8 +41,11 @@ def _parse_args() -> argparse.Namespace:
     # 内容参数均【不设默认值】：应由调用方（agent，按 SKILL.md 的引导与推荐）显式传入；
     # 未传的参数不会进入请求体，由服务端默认值或自动推荐模式处理。
     ap = argparse.ArgumentParser(description='电商套图生成客户端')
-    ap.add_argument('--image-url', action='append', default=[], dest='image_urls', required=True,
-                    help='商品参考图 URL 或 data:image/... Base64（可重复多次）')
+    ap.add_argument('--credits-only', action='store_true', dest='credits_only',
+                    help='只查询积分余额并退出，不提交生成任务（此模式无需 --image-url）')
+    # --image-url 在生成模式下必填，但 --credits-only 模式不需要，故这里设为非必填、在 main 里按模式校验。
+    ap.add_argument('--image-url', action='append', default=[], dest='image_urls',
+                    help='商品参考图 URL / data:image Base64 / 本地文件路径（可重复多次）')
     ap.add_argument('--scenes', help='自定义套图类型，逗号分隔；不传或传空=自动推荐')
     ap.add_argument('--num', type=int, help='生成图片张数（1-8）')
     ap.add_argument('--platform', help='目标平台（如 Amazon）')
@@ -376,8 +379,38 @@ def _resolve_image_input(value: str) -> str:
     sys.exit(2)
 
 
+async def _run_credits_only(base: str, api_key: str) -> None:
+    """只查询并打印积分余额，不提交生成任务（供 SKILL.md 的"查积分"走统一脚本，而非各自拼请求）。"""
+    print('💳 查询积分余额…（{}）'.format(base))
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+        try:
+            body = await _query_credits(client, base, api_key)
+        except httpx.ConnectError:
+            print('❌ 无法连接接口 {}：请确认网络和 API 地址后重试。'.format(base))
+            sys.exit(3)
+        except (httpx.HTTPError, RuntimeError) as e:
+            print('❌ 查询积分失败: {}'.format(e))
+            sys.exit(1)
+    balance = _extract_credit_balance(body.get('data'))
+    if balance is not None:
+        shown = int(balance) if float(balance).is_integer() else balance
+        print('💳 当前积分余额：{}'.format(shown))
+    print(json.dumps(body, ensure_ascii=False, indent=2))
+
+
 async def main() -> None:
     args = _parse_args()
+    api_key = os.getenv('FOTOR_ECOMMERCE_SUITE_API')
+    if not api_key:
+        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API。请在运行环境中设置该环境变量后重试。')
+        sys.exit(2)
+    base = API_BASE_URL
+
+    # 只查积分：不需要 --image-url，查完即退出。
+    if args.credits_only:
+        await _run_credits_only(base, api_key)
+        return
+
     raw_inputs = [u.strip() for u in args.image_urls if u and u.strip()]
     if not raw_inputs:
         print('❌ 至少需要一个 --image-url')
@@ -387,12 +420,6 @@ async def main() -> None:
     if args.num is not None and not 1 <= args.num <= 8:
         print('❌ --num must be between 1 and 8')
         sys.exit(2)
-    api_key = os.getenv('FOTOR_ECOMMERCE_SUITE_API')
-    if not api_key:
-        print('❌ 未配置 FOTOR_ECOMMERCE_SUITE_API。请在运行环境中设置该环境变量后重试。')
-        sys.exit(2)
-
-    base = API_BASE_URL
     skill_version = _read_skill_version()
     payload, scenes = _build_payload(args, image_urls, skill_version)
     brand_on = any(getattr(args, k) for k in ('brand_info', 'brand_logo'))

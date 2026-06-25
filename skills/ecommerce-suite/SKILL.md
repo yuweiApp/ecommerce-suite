@@ -1,7 +1,7 @@
 ---
 name: ecommerce-suite
 description: Use when the user wants to generate a set of e-commerce product images (套图 / Listing 主图集 / 多角度细节图 / 场景穿搭图 / 卖点图) from one or more product photos given as URLs or local file paths. Returns per-scene results with each image name, success flag, generated URL, or error.
-version: 1.0.8
+version: 1.0.14
 author: Fotor
 license: MIT
 platforms: [ linux, macos, windows ]
@@ -35,12 +35,10 @@ metadata:
 
 业务内容参数需要你按下方推荐值显式传入；用户未提供的可选信息不要编造。
 
-底层接口使用 **Fotor Business OpenAPI 电商套图异步任务**：
-- 查询积分：`GET /v1/credits`
-- 提交任务：`POST /v1/aiart/ecommercelistingset`
-- 查询任务：`GET /v1/aiart/tasks/{taskId}`
-- 默认 provider 为 `skill`，提交任务不要在 URL 中额外拼 provider；兼容路径由服务端处理。
-- 任务状态：`0` 进行中，`1` 成功，`2` 失败；脚本会自动轮询到成功、失败或超时。
+底层接口使用 **Fotor Business OpenAPI 电商套图异步任务**（查询积分 / 提交任务 / 查询任务），
+- **查积分**：跑 `generate_suite.py --credits-only`（无需 `--image-url`，只打印余额后退出）。
+- **生成套图**：跑 `generate_suite.py`（脚本内部会先查积分预检，再提交、轮询出图）。
+- 默认 provider 为 `skill`；任务状态 `0` 进行中 / `1` 成功 / `2` 失败，脚本会自动轮询到结束。
 
 > 🚦 **硬性规则：运行脚本前【必须】先让用户确认设置。** 这是一道阻塞闸门——
 > 在用户回复确认（如「按这个生成」「OK」「可以」）之前，**绝不允许**调用 `terminal`
@@ -143,7 +141,13 @@ metadata:
 脚本依赖 `httpx`，统一用 `uv run --with httpx python`
 运行（这样无论当前环境是否已装该依赖，都能临时备齐、稳定运行）。
 
-脚本会在提交任务前调用 `GET /v1/credits` 查询积分，并按 `num × 8` 估算本次消耗：
+**只查积分**（用户问余额时用这个）：
+
+```bash
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py --credits-only
+```
+
+生成套图时脚本会在提交任务前调用 `GET /v1/credits` 查询积分，并按 `num × 8` 估算本次消耗：
 - 若识别到余额且余额不足，脚本会直接停止，不提交生成任务。
 - 若积分响应的余额字段无法识别，脚本会打印 `data` 内容并继续提交；提交接口仍会按标准错误返回
   `No enough credits` / `code=510` 等积分不足信息。
@@ -155,6 +159,19 @@ uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
   --image-url "https://.../product.jpeg" \
   --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing
 ```
+
+**本地图片 / 多张参考图**：`--image-url` 直接传本地文件路径即可（脚本自动转换，**不要自己上传**）；
+多张就重复传 `--image-url`，URL 与本地路径可混用：
+
+```bash
+uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
+  --image-url "/Users/me/Pictures/product-front.jpg" \
+  --image-url "/Users/me/Pictures/product-side.png" \
+  --image-url "https://.../product-back.jpeg" \
+  --num 4 --platform Amazon --country American --language en_US --aspect-ratio 1:1 --image-type listing
+```
+
+> Windows 路径示例：`--image-url "C:\Users\me\Pictures\product.jpg"`（含空格时整体加引号）。
 
 用户明确指定场景时，追加 `--scenes`（没有指定就不加）：
 
@@ -179,7 +196,8 @@ uv run --with httpx python skills/ecommerce-suite/scripts/generate_suite.py \
 
 | 参数 | 必填 | 含义 |
 |---|---|---|
-| `--image-url` | ✅ | 商品参考图：公网 URL 或**本地文件路径**（本地文件脚本会自动处理）；有多张就重复传多次 |
+| `--credits-only` | 可选 | 只查积分余额并退出，不生成；此模式无需 `--image-url` |
+| `--image-url` | 生成时必填 | 商品参考图：公网 URL 或**本地文件路径**（本地文件脚本会自动处理）；有多张就重复传多次 |
 | `--scenes` | 可选 | 自定义套图场景，逗号分隔；不传或空数组时使用服务端自动推荐 |
 | `--num` | 建议传 | 生成几张（1–8，推荐 4）。图片张数与场景数量无关 |
 | `--platform` | 建议传 | 目标平台（如 `Amazon`） |
